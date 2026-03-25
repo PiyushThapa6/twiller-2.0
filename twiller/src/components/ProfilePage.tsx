@@ -8,7 +8,6 @@ import {
   Link as LinkIcon,
   MoreHorizontal,
   Camera,
-  Settings,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "./ui/button";
@@ -18,11 +17,12 @@ import TweetCard from "./TweetCard";
 import { Card, CardContent } from "./ui/card";
 import Editprofile from "./Editprofile";
 import axiosInstance from "@/lib/axiosInstance";
+import NotificationToggle from "./NotificationToggle";
 
 interface Tweet {
-  id: string;
+  _id: string;
   author: {
-    id: string;
+    _id: string;
     username: string;
     displayName: string;
     avatar: string;
@@ -37,80 +37,18 @@ interface Tweet {
   retweeted?: boolean;
   image?: string;
 }
-const tweets: Tweet[] = [
-  {
-    id: "1",
-    author: {
-      id: "1",
-      username: "elonmusk",
-      displayName: "Elon Musk",
-      avatar:
-        "https://images.pexels.com/photos/2379005/pexels-photo-2379005.jpeg?auto=compress&cs=tinysrgb&w=400",
-      verified: true,
-    },
-    content:
-      "Just had an amazing conversation about the future of AI. The possibilities are endless!",
-    timestamp: "2h",
-    likes: 1247,
-    retweets: 324,
-    comments: 89,
-    liked: false,
-    retweeted: false,
-  },
-  {
-    id: "2",
-    author: {
-      id: "1",
-      username: "sarahtech",
-      displayName: "Sarah Johnson",
-      avatar:
-        "https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=400",
-      verified: false,
-    },
-    content:
-      "Working on some exciting new features for our app. Can't wait to share what we've been building! 🚀",
-    timestamp: "4h",
-    likes: 89,
-    retweets: 23,
-    comments: 12,
-    liked: true,
-    retweeted: false,
-  },
-  {
-    id: "3",
-    author: {
-      id: "4",
-      username: "designguru",
-      displayName: "Alex Chen",
-      avatar:
-        "https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg?auto=compress&cs=tinysrgb&w=400",
-      verified: true,
-    },
-    content:
-      "The new design system is finally complete! It took 6 months but the results are incredible. Clean, consistent, and accessible.",
-    timestamp: "6h",
-    likes: 456,
-    retweets: 78,
-    comments: 34,
-    liked: false,
-    retweeted: true,
-    image:
-      "https://images.pexels.com/photos/196645/pexels-photo-196645.jpeg?auto=compress&cs=tinysrgb&w=800",
-  },
-];
 export default function ProfilePage() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("posts");
   const [showEditModal, setShowEditModal] = useState(false);
-
-  if (!user) return null;
-  const [tweets, setTweets] = useState<any>([]);
+  const [tweets, setTweets] = useState<Tweet[]>([]);
   const [loading, setloading] = useState(false);
+
   const fetchTweets = async () => {
     try {
       setloading(true);
       const res = await axiosInstance.get("/post");
-      setTweets(res.data);
+      setTweets(Array.isArray(res.data) ? res.data : []);
     } catch (error) {
       console.error(error);
     } finally {
@@ -120,8 +58,10 @@ export default function ProfilePage() {
   useEffect(() => {
     fetchTweets();
   }, []);
-  // Filter tweets by current user
-  const userTweets = tweets.filter((tweet: any) => tweet.author._id === user._id);
+
+  if (!user) return null;
+
+  const userTweets = tweets.filter((tweet) => tweet.author._id === user._id);
 
   return (
     <div className="min-h-screen">
@@ -203,6 +143,10 @@ export default function ProfilePage() {
           </Button>
         </div>
 
+        <div className="mb-4">
+          <NotificationToggle />
+        </div>
+
         {user.bio && (
           <p className="text-white mb-3 leading-relaxed">{user.bio}</p>
         )}
@@ -274,14 +218,14 @@ export default function ProfilePage() {
                 <CardContent className="py-12 text-center">
                   <div className="text-gray-400">
                     <h3 className="text-2xl font-bold mb-2">
-                      You haven't posted yet
+                      You haven&apos;t posted yet
                     </h3>
                     <p>When you post, it will show up here.</p>
                   </div>
                 </CardContent>
               </Card>
             ) : (
-              userTweets.map((tweet:any) => (
+              userTweets.map((tweet) => (
                 <TweetCard key={tweet._id} tweet={tweet} />
               ))
             )}
@@ -293,7 +237,7 @@ export default function ProfilePage() {
             <CardContent className="py-12 text-center">
               <div className="text-gray-400">
                 <h3 className="text-2xl font-bold mb-2">
-                  You haven't replied yet
+                  You haven&apos;t replied yet
                 </h3>
                 <p>When you reply to a post, it will show up here.</p>
               </div>
@@ -319,7 +263,7 @@ export default function ProfilePage() {
             <CardContent className="py-12 text-center">
               <div className="text-gray-400">
                 <h3 className="text-2xl font-bold mb-2">
-                  You haven't written any articles
+                  You haven&apos;t written any articles
                 </h3>
                 <p>When you write articles, they will show up here.</p>
               </div>

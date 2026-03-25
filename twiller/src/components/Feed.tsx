@@ -1,15 +1,16 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Tabs, TabsList, TabsTrigger } from "./ui/tabs";
 import { Card, CardContent } from "./ui/card";
 import LoadingSpinner from "./loading-spinner";
 import TweetCard from "./TweetCard";
 import TweetComposer from "./TweetComposer";
 import axiosInstance from "@/lib/axiosInstance";
+import { useAuth } from "@/context/AuthContext";
 
 interface Tweet {
-  id: string;
+  _id: string;
   author: {
-    id: string;
+    _id: string;
     username: string;
     displayName: string;
     avatar: string;
@@ -24,86 +25,95 @@ interface Tweet {
   retweeted?: boolean;
   image?: string;
 }
-const tweets: Tweet[] = [
-  {
-    id: "1",
-    author: {
-      id: "2",
-      username: "elonmusk",
-      displayName: "Elon Musk",
-      avatar:
-        "https://images.pexels.com/photos/2379005/pexels-photo-2379005.jpeg?auto=compress&cs=tinysrgb&w=400",
-      verified: true,
-    },
-    content:
-      "Just had an amazing conversation about the future of AI. The possibilities are endless!",
-    timestamp: "2h",
-    likes: 1247,
-    retweets: 324,
-    comments: 89,
-    liked: false,
-    retweeted: false,
-  },
-  {
-    id: "2",
-    author: {
-      id: "3",
-      username: "sarahtech",
-      displayName: "Sarah Johnson",
-      avatar:
-        "https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=400",
-      verified: false,
-    },
-    content:
-      "Working on some exciting new features for our app. Can't wait to share what we've been building! 🚀",
-    timestamp: "4h",
-    likes: 89,
-    retweets: 23,
-    comments: 12,
-    liked: true,
-    retweeted: false,
-  },
-  {
-    id: "3",
-    author: {
-      id: "4",
-      username: "designguru",
-      displayName: "Alex Chen",
-      avatar:
-        "https://images.pexels.com/photos/1681010/pexels-photo-1681010.jpeg?auto=compress&cs=tinysrgb&w=400",
-      verified: true,
-    },
-    content:
-      "The new design system is finally complete! It took 6 months but the results are incredible. Clean, consistent, and accessible.",
-    timestamp: "6h",
-    likes: 456,
-    retweets: 78,
-    comments: 34,
-    liked: false,
-    retweeted: true,
-    image:
-      "https://images.pexels.com/photos/196645/pexels-photo-196645.jpeg?auto=compress&cs=tinysrgb&w=800",
-  },
-];
 const Feed = () => {
-  const [tweets, setTweets] = useState<any>([]);
+  const { user } = useAuth();
+  const [tweets, setTweets] = useState<Tweet[]>([]);
   const [loading, setloading] = useState(false);
-  const fetchTweets = async () => {
+  const seenTweetIdsRef = useRef<Set<string>>(new Set());
+  const hasInitializedFeedRef = useRef(false);
+
+  const shouldNotifyForTweet = useCallback((tweet: Tweet) => {
+    if (!user?.notificationsEnabled) return false;
+    if (typeof window === "undefined" || !("Notification" in window)) {
+      return false;
+    }
+    if (Notification.permission !== "granted") return false;
+    if (!tweet._id || seenTweetIdsRef.current.has(tweet._id)) return false;
+
+    const content = tweet.content.toLowerCase();
+    return content.includes("cricket") || content.includes("science");
+  }, [user?.notificationsEnabled]);
+
+  const notifyForTweet = useCallback((tweet: Tweet) => {
+    new Notification("Keyword tweet alert", {
+      body: tweet.content,
+      tag: `tweet-${tweet._id}`,
+    });
+  }, []);
+
+  const fetchTweets = useCallback(async (options?: { silent?: boolean }) => {
     try {
-      setloading(true);
+      if (!options?.silent) {
+        setloading(true);
+      }
       const res = await axiosInstance.get("/post");
-      setTweets(res.data);
+      const nextTweets: Tweet[] = Array.isArray(res.data) ? res.data : [];
+
+      if (hasInitializedFeedRef.current) {
+        nextTweets.forEach((tweet) => {
+          if (shouldNotifyForTweet(tweet)) {
+            notifyForTweet(tweet);
+          }
+        });
+      }
+
+      seenTweetIdsRef.current = new Set(
+        nextTweets.filter((tweet) => tweet._id).map((tweet) => tweet._id)
+      );
+      hasInitializedFeedRef.current = true;
+      setTweets(nextTweets);
     } catch (error) {
       console.error(error);
     } finally {
-      setloading(false);
+      if (!options?.silent) {
+        setloading(false);
+      }
     }
-  };
+  }, [notifyForTweet, shouldNotifyForTweet]);
+
   useEffect(() => {
     fetchTweets();
-  }, []);
-  const handlenewtweet = (newtweet: any) => {
-    setTweets((prev: any) => [newtweet, ...prev]);
+  }, [fetchTweets]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const intervalId = window.setInterval(() => {
+      fetchTweets({ silent: true });
+    }, 15000);
+
+    return () => window.clearInterval(intervalId);
+  }, [fetchTweets, user]);
+
+  const handlenewtweet = (newtweet: Tweet) => {
+    const hasKeyword =
+      newtweet.content.toLowerCase().includes("cricket") ||
+      newtweet.content.toLowerCase().includes("science");
+
+    if (
+      user?.notificationsEnabled &&
+      typeof window !== "undefined" &&
+      "Notification" in window &&
+      Notification.permission === "granted" &&
+      hasKeyword
+    ) {
+      notifyForTweet(newtweet);
+    }
+
+    if (newtweet._id) {
+      seenTweetIdsRef.current.add(newtweet._id);
+    }
+    setTweets((prev) => [newtweet, ...prev]);
   };
   return (
     <div className="min-h-screen">
@@ -129,7 +139,7 @@ const Feed = () => {
           </TabsList>
         </Tabs>
       </div>
-      <TweetComposer onTweetPosted={handlenewtweet}/>
+      <TweetComposer onTweetPosted={handlenewtweet} />
       <div className="divide-y divide-gray-800">
         {loading ? (
           <Card className="bg-black border-none">
@@ -141,7 +151,7 @@ const Feed = () => {
             </CardContent>
           </Card>
         ) : (
-          tweets.map((tweet: any) => <TweetCard key={tweet._id} tweet={tweet} />)
+          tweets.map((tweet) => <TweetCard key={tweet._id} tweet={tweet} />)
         )}
       </div>
     </div>

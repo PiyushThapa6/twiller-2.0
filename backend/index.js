@@ -6,16 +6,18 @@ import User from "./models/user.js";
 import Tweet from "./models/tweet.js";
 dotenv.config();
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: "*",
+  methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: false
+}));
 app.use(express.json());
-
 app.get("/", (req, res) => {
   res.send("Twiller backend is running successfully");
 });
-
 const port = process.env.PORT || 5000;
 const url = process.env.MONOGDB_URL;
-
 mongoose
   .connect(url)
   .then(() => {
@@ -27,8 +29,6 @@ mongoose
   .catch((err) => {
     console.error("❌ MongoDB connection error:", err.message);
   });
-
-//Register
 app.post("/register", async (req, res) => {
   try {
     const existinguser = await User.findOne({ email: req.body.email });
@@ -42,7 +42,6 @@ app.post("/register", async (req, res) => {
     return res.status(400).send({ error: error.message });
   }
 });
-// loggedinuser
 app.get("/loggedinuser", async (req, res) => {
   try {
     const { email } = req.query;
@@ -50,12 +49,12 @@ app.get("/loggedinuser", async (req, res) => {
       return res.status(400).send({ error: "Email required" });
     }
     const user = await User.findOne({ email: email });
+    if (!user) return res.status(404).send({ error: "User not found" });
     return res.status(200).send(user);
   } catch (error) {
     return res.status(400).send({ error: error.message });
   }
 });
-// update Profile
 app.patch("/userupdate/:email", async (req, res) => {
   try {
     const { email } = req.params;
@@ -69,9 +68,6 @@ app.patch("/userupdate/:email", async (req, res) => {
     return res.status(400).send({ error: error.message });
   }
 });
-// Tweet API
-
-// POST
 app.post("/post", async (req, res) => {
   try {
     const tweet = new Tweet(req.body);
@@ -81,7 +77,6 @@ app.post("/post", async (req, res) => {
     return res.status(400).send({ error: error.message });
   }
 });
-// get all tweet
 app.get("/post", async (req, res) => {
   try {
     const tweet = await Tweet.find().sort({ timestamp: -1 }).populate("author");
@@ -90,7 +85,6 @@ app.get("/post", async (req, res) => {
     return res.status(400).send({ error: error.message });
   }
 });
-//  LIKE TWEET
 app.post("/like/:tweetid", async (req, res) => {
   try {
     const { userId } = req.body;
@@ -105,7 +99,6 @@ app.post("/like/:tweetid", async (req, res) => {
     return res.status(400).send({ error: error.message });
   }
 });
-// retweet 
 app.post("/retweet/:tweetid", async (req, res) => {
   try {
     const { userId } = req.body;

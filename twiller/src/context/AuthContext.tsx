@@ -22,6 +22,23 @@ interface User {
   email: string;
   website: string;
   location: string;
+  notificationsEnabled?: boolean;
+}
+
+interface ProfileUpdateData {
+  displayName?: string;
+  bio?: string;
+  location?: string;
+  website?: string;
+  avatar?: string;
+  notificationsEnabled?: boolean;
+}
+
+interface RegisterPayload {
+  username: string;
+  displayName: string;
+  avatar: string;
+  email: string | null;
 }
 
 interface AuthContextType {
@@ -33,13 +50,7 @@ interface AuthContextType {
     username: string,
     displayName: string
   ) => Promise<void>;
-  updateProfile: (profileData: {
-    displayName: string;
-    bio: string;
-    location: string;
-    website: string;
-    avatar: string;
-  }) => Promise<void>;
+  updateProfile: (profileData: ProfileUpdateData) => Promise<void>;
   logout: () => void;
   isLoading: boolean;
   googlesignin: () => void;
@@ -123,7 +134,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       password
     );
     const user = usercred.user;
-    const newuser: any = {
+    const newuser: RegisterPayload = {
       username,
       displayName,
       avatar: user.photoURL || "https://images.pexels.com/photos/1139743/pexels-photo-1139743.jpeg?auto=compress&cs=tinysrgb&w=400",
@@ -151,18 +162,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     localStorage.removeItem("twitter-user");
   };
 
-  const updateProfile = async (profileData: {
-    displayName: string;
-    bio: string;
-    location: string;
-    website: string;
-    avatar: string;
-  }) => {
+  const updateProfile = async (profileData: ProfileUpdateData) => {
     if (!user) return;
 
     setIsLoading(true);
-    // Mock API call - in real app, this would call an API
-    // await new Promise((resolve) => setTimeout(resolve, 1000));
 
     const updatedUser: User = {
       ...user,
@@ -173,8 +176,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       updatedUser
     );
     if (res.data) {
-      setUser(updatedUser);
-      localStorage.setItem("twitter-user", JSON.stringify(updatedUser));
+      setUser(res.data);
+      localStorage.setItem("twitter-user", JSON.stringify(res.data));
     }
 
     setIsLoading(false);
@@ -191,15 +194,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         throw new Error("No email found in Google account");
       }
 
-      let userData;
+      let userData: User | undefined;
 
       try {
         const res = await axiosInstance.get("/loggedinuser", {
           params: { email: firebaseuser.email },
         });
         userData = res.data;
-      } catch (err: any) {
-        const newuser: any = {
+      } catch {
+        const newuser: RegisterPayload = {
           username: firebaseuser.email.split("@")[0],
           displayName: firebaseuser.displayName || "User",
           avatar: firebaseuser.photoURL || "https://images.pexels.com/photos/1139743/pexels-photo-1139743.jpeg?auto=compress&cs=tinysrgb&w=400",
@@ -216,9 +219,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       } else {
         throw new Error("Login/Register failed: No user data returned");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : "Login failed";
       console.error("Google Sign-In Error:", error);
-      alert(error.response?.data?.message || error.message || "Login failed");
+      alert(message);
     } finally {
       setIsLoading(false);
     }
