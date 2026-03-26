@@ -18,6 +18,9 @@ import { Card, CardContent } from "./ui/card";
 import Editprofile from "./Editprofile";
 import axiosInstance from "@/lib/axiosInstance";
 import NotificationToggle from "./NotificationToggle";
+import SubscriptionPlans from "./SubscriptionPlans";
+import LanguageSelector from "./LanguageSelector";
+import LoginHistoryCard from "./LoginHistoryCard";
 
 interface Tweet {
   _id: string;
@@ -145,6 +148,12 @@ export default function ProfilePage() {
 
         <div className="mb-4">
           <NotificationToggle />
+        </div>
+
+        <div className="grid gap-4 mb-4">
+          <SubscriptionPlans />
+          <LanguageSelector />
+          <LoginHistoryCard />
         </div>
 
         {user.bio && (

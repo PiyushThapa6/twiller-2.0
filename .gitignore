@@ -1,0 +1,9 @@
+.env
+.env.local
+.env.*
+!.env.example
+
+backend/.env
+backend/node_modules/
+twiller/node_modules/
+twiller/.env.local

@@ -10,7 +10,12 @@ import { Textarea } from "./ui/textarea";
 import LoadingSpinner from "./loading-spinner";
 import axios from "axios";
 
-const Editprofile = ({ isopen, onclose }: any) => {
+interface EditProfileProps {
+  isopen: boolean;
+  onclose: () => void;
+}
+
+const Editprofile = ({ isopen, onclose }: EditProfileProps) => {
   const { user, updateProfile } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormdata] = useState({
@@ -19,8 +24,9 @@ const Editprofile = ({ isopen, onclose }: any) => {
     location: "Earth",
     website: "example.com",
     avatar: user?.avatar || "",
+    phone: user?.phone || "",
   });
-  const [error, setError] = useState<any>({});
+  const [error, setError] = useState<Record<string, string>>({});
   if (!isopen || !user) return null;
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -43,6 +49,10 @@ const Editprofile = ({ isopen, onclose }: any) => {
       newErrors.location = "Location must be 30 characters or less";
     }
 
+    if (formData.phone && formData.phone.length > 20) {
+      newErrors.phone = "Phone number must be 20 characters or less";
+    }
+
     setError(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -55,7 +65,7 @@ const Editprofile = ({ isopen, onclose }: any) => {
     try {
       await updateProfile(formData);
       onclose();
-    } catch (error) {
+    } catch {
       setError({ general: "Failed to update profile. Please try again." });
     } finally {
       setIsLoading(false);
@@ -65,7 +75,7 @@ const Editprofile = ({ isopen, onclose }: any) => {
   const handleInputChange = (field: string, value: string) => {
     setFormdata((prev) => ({ ...prev, [field]: value }));
     if (error[field]) {
-      setError((prev: any) => ({ ...prev, [field]: "" }));
+      setError((prev) => ({ ...prev, [field]: "" }));
     }
   };
 
@@ -285,6 +295,28 @@ const Editprofile = ({ isopen, onclose }: any) => {
                   )}
                   <p className="text-gray-400 ml-auto">
                     {formData.website.length}/100
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="phone" className="text-white">
+                  Phone
+                </Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  value={formData.phone}
+                  onChange={(e) => handleInputChange("phone", e.target.value)}
+                  className="bg-transparent border-gray-600 text-white placeholder-gray-400 focus:border-blue-500"
+                  placeholder="+91..."
+                  maxLength={20}
+                  disabled={isLoading}
+                />
+                <div className="flex justify-between text-sm">
+                  {error.phone && <p className="text-red-400">{error.phone}</p>}
+                  <p className="text-gray-400 ml-auto">
+                    {formData.phone.length}/20
                   </p>
                 </div>
               </div>

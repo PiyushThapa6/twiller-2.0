@@ -1,16 +1,16 @@
 import Landing from "@/components/Landing";
 import Mainlayout from "@/components/layout/Mainlayout";
-import { AuthProvider, useAuth } from "@/context/AuthContext";
-import Image from "next/image";
+import { AuthProvider } from "@/context/AuthContext";
+import { LanguageProvider } from "@/context/LanguageContext";
 
 export default function Home() {
-
   return (
     <AuthProvider>
-      <Mainlayout>
-        {" "}
-        <Landing />
-      </Mainlayout>
+      <LanguageProvider>
+        <Mainlayout>
+          <Landing />
+        </Mainlayout>
+      </LanguageProvider>
     </AuthProvider>
   );
 }

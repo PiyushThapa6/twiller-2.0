@@ -25,6 +25,7 @@ import { Button } from '../ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import TwitterLogo from '../Twitterlogo';
 import { useAuth } from '@/context/AuthContext';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface SidebarProps {
   currentPage?: string;
@@ -33,15 +34,16 @@ interface SidebarProps {
 
 export default function Sidebar({ currentPage = 'home', onNavigate }: SidebarProps) {
   const { user, logout } = useAuth();
+  const { t } = useLanguage();
 
   const navigation = [
-    { name: 'Home', icon: Home, current: currentPage === 'home', page: 'home' },
-    { name: 'Explore', icon: Search, current: currentPage === 'explore', page: 'explore' },
-    { name: 'Notifications', icon: Bell, current: currentPage === 'notifications', page: 'notifications', badge: true },
-    { name: 'Messages', icon: Mail, current: currentPage === 'messages', page: 'messages' },
-    { name: 'Bookmarks', icon: Bookmark, current: currentPage === 'bookmarks', page: 'bookmarks' },
-    { name: 'Profile', icon: User, current: currentPage === 'profile', page: 'profile' },
-    { name: 'More', icon: MoreHorizontal, current: currentPage === 'more', page: 'more' },
+    { name: t('home'), icon: Home, current: currentPage === 'home', page: 'home' },
+    { name: t('explore'), icon: Search, current: currentPage === 'explore', page: 'explore' },
+    { name: t('notifications'), icon: Bell, current: currentPage === 'notifications', page: 'notifications', badge: true },
+    { name: t('messages'), icon: Mail, current: currentPage === 'messages', page: 'messages' },
+    { name: t('bookmarks'), icon: Bookmark, current: currentPage === 'bookmarks', page: 'bookmarks' },
+    { name: t('profile'), icon: User, current: currentPage === 'profile', page: 'profile' },
+    { name: t('more'), icon: MoreHorizontal, current: currentPage === 'more', page: 'more' },
   ];
 
   return (
@@ -75,7 +77,7 @@ export default function Sidebar({ currentPage = 'home', onNavigate }: SidebarPro
         
         <div className="mt-8 px-2">
           <Button className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-full text-lg">
-            Post
+            {t('post')}
           </Button>
         </div>
       </nav>

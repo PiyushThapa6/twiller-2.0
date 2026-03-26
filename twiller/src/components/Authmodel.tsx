@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 
 import { X, Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
 
@@ -12,6 +13,7 @@ import { Input } from './ui/input';
 import { Separator } from './ui/separator';
 import { useAuth } from '@/context/AuthContext';
 import TwitterLogo from './Twitterlogo';
+import { useLanguage } from '@/context/LanguageContext';
 
 
 
@@ -23,13 +25,15 @@ interface AuthModalProps {
 
 export default function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalProps) {
   const { login, signup, isLoading } = useAuth();
+  const { t } = useLanguage();
   const [mode, setMode] = useState<'login' | 'signup'>(initialMode);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     username: '',
-    displayName: ''
+    displayName: '',
+    phone: '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -62,6 +66,10 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }: Au
       if (!formData.displayName.trim()) {
         newErrors.displayName = 'Display name is required';
       }
+
+      if (!formData.phone.trim()) {
+        newErrors.phone = 'Phone number is required';
+      }
     }
 
     setErrors(newErrors);
@@ -76,13 +84,18 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }: Au
       if (mode === 'login') {
         await login(formData.email, formData.password);
       } else {
-        await signup(formData.email, formData.password, formData.username, formData.displayName);
+        await signup(formData.email, formData.password, formData.username, formData.displayName, formData.phone);
       }
       onClose();
-      setFormData({ email: '', password: '', username: '', displayName: '' });
+      setFormData({ email: '', password: '', username: '', displayName: '', phone: '' });
       setErrors({});
     } catch (error) {
-      setErrors({ general: 'Authentication failed. Please try again.' });
+      setErrors({
+        general:
+          error instanceof Error
+            ? error.message
+            : 'Authentication failed. Please try again.',
+      });
     }
   };
 
@@ -96,7 +109,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }: Au
   const switchMode = () => {
     setMode(mode === 'login' ? 'signup' : 'login');
     setErrors({});
-    setFormData({ email: '', password: '', username: '', displayName: '' });
+    setFormData({ email: '', password: '', username: '', displayName: '', phone: '' });
   };
 
   return (
@@ -116,7 +129,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }: Au
               <TwitterLogo size="xl" className="text-white" />
             </div>
             <CardTitle className="text-2xl font-bold">
-              {mode === 'login' ? 'Sign in to X' : 'Create your account'}
+              {mode === 'login' ? t('sign_in_to_x') : t('create_your_account')}
             </CardTitle>
           </div>
         </CardHeader>
@@ -166,6 +179,22 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }: Au
                   </div>
                   {errors.username && (
                     <p className="text-red-400 text-sm">{errors.username}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="phone" className="text-white">Phone</Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    placeholder="+91..."
+                    value={formData.phone}
+                    onChange={(e) => handleInputChange('phone', e.target.value)}
+                    className="bg-transparent border-gray-600 text-white placeholder-gray-400 focus:border-blue-500"
+                    disabled={isLoading}
+                  />
+                  {errors.phone && (
+                    <p className="text-red-400 text-sm">{errors.phone}</p>
                   )}
                 </div>
               </>
@@ -232,6 +261,15 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login' }: Au
                 mode === 'login' ? 'Sign in' : 'Create account'
               )}
             </Button>
+
+            {mode === 'login' && (
+              <Link
+                href="/forgot-password"
+                className="block text-sm text-blue-400 hover:text-blue-300"
+              >
+                {t('forgot_password')}
+              </Link>
+            )}
           </form>
 
           <div className="relative">
