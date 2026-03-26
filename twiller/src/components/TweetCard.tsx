@@ -14,9 +14,30 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import axiosInstance from "@/lib/axiosInstance";
 
-export default function TweetCard({ tweet }: any) {
+interface TweetCardData {
+  _id: string;
+  author: {
+    avatar: string;
+    displayName: string;
+    verified?: boolean;
+    username: string;
+  };
+  content?: string;
+  image?: string | null;
+  audioUrl?: string | null;
+  timestamp?: string;
+  comments: number;
+  likes: number;
+  retweets: number;
+  liked?: boolean;
+  likedBy?: string[];
+  retweeted?: boolean;
+  retweetedBy?: string[];
+}
+
+export default function TweetCard({ tweet }: { tweet: TweetCardData }) {
   const { user } = useAuth();
-  const [tweetstate, settweetstate] = useState(tweet);
+  const [tweetstate, settweetstate] = useState<TweetCardData>(tweet);
   const likeTweet = async (tweetId: string) => {
     try {
       const res = await axiosInstance.post(`/like/${tweetId}`, {
@@ -109,6 +130,15 @@ export default function TweetCard({ tweet }: any) {
                   alt="Tweet image"
                   className="w-full h-auto max-h-96 object-cover"
                 />
+              </div>
+            )}
+
+            {tweetstate.audioUrl && (
+              <div className="mb-3 rounded-2xl border border-gray-800 bg-gray-950/70 p-3">
+                <p className="mb-2 text-sm font-semibold text-white">
+                  Audio tweet
+                </p>
+                <audio controls src={tweetstate.audioUrl} className="w-full" />
               </div>
             )}
 
